@@ -63,17 +63,19 @@ const getVideoById = asyncHandler(async (req, res) => {
     //TODO: get video by id
 
     if(!videoId) {
-        throw new ApiError(400, "Please provide video ID")
+        throw new ApiError(400, "Video ID is required")
     }
 
     const video = await Video.findById(videoId)
+
     if(!video) {
         throw new ApiError(400, `Video with ID: ${videoId} is not present`)
     }
 
     return res.status(200).json(
-        new ApiResponse(200, video, `Sending video with ID: ${videoId}`)
+        new ApiResponse(200, video, `Video Added Successfully`)
     )
+
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
@@ -81,20 +83,23 @@ const updateVideo = asyncHandler(async (req, res) => {
     //TODO: update video details like title, description, thumbnail
 
     if(!videoId) {
-        throw new ApiError(400, "Please provide video ID")
+        throw new ApiError(400, "Video ID is required")
     }
 
     const video = await Video.findById(videoId)
+
     if(!video) {
         throw new ApiError(400, `Video with ID: ${videoId} is not present`)
     }
 
     const {title, description} = req.body
+
     if(!title && !description && !req.files) {
         throw new ApiError(400, "Update atleast one field")
     }
 
     let thumbnail = video.thumbnail
+
     if(req.files) {
         const thumbnailLocalPath = req.files?.thumbnail[0]?.path
         
@@ -114,12 +119,13 @@ const updateVideo = asyncHandler(async (req, res) => {
     )
 
     if(!updatedVideo) {
-        throw new ApiError(500, "Error while updating the video")
+        throw new ApiError(500, `Error while updating the video with ID: ${videoId}`)
     }
 
     return res.status(200).json(
         new ApiResponse(200, updatedVideo, "Video Updated Successfully")
     )
+
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
@@ -127,10 +133,11 @@ const deleteVideo = asyncHandler(async (req, res) => {
     //TODO: delete video
 
     if(!videoId) {
-        throw new ApiError(400, "Please provide video ID")
+        throw new ApiError(400, "Video ID is required")
     }
 
     const video = await Video.findById(videoId)
+
     if(!video) {
         throw new ApiError(400, `Video with ID: ${videoId} is not present`)
     }
@@ -138,22 +145,24 @@ const deleteVideo = asyncHandler(async (req, res) => {
     try {
         await Video.deleteOne({ "_id": videoId });
     } catch(error) {
-        throw new ApiError(500, "Error while deleting video")
+        throw new ApiError(500, `Error while deleting video with ID: ${videoId}`)
     }
 
     return res.status(200).json(
-        new ApiResponse(200, videoId, `Video with ID: ${videoId} deleted successfully`)
+        new ApiResponse(200, videoId, `Video deleted successfully`)
     )
+
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
     const { videoId } = req.params
 
     if(!videoId) {
-        throw new ApiError(400, "Please provide video ID")
+        throw new ApiError(400, "Video ID is required")
     }
 
     const video = await Video.findById(videoId)
+
     if(!video) {
         throw new ApiError(400, `Video with ID: ${videoId} is not present`)
     }
@@ -168,12 +177,13 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     )
 
     if(!toggledVideo) {
-        throw new ApiError(500, "Erro while toggling Publish Status")
+        throw new ApiError(500, `Erro while toggling Publish Status of Video with ID: ${videoId}`)
     }
 
     return res.status(200).json(
-        new ApiResponse(200, toggledVideo, `Publish Status of video with ID: ${videoId} toggled successfully`)
+        new ApiResponse(200, toggledVideo, `Publish Status of Video toggled successfully`)
     )
+
 })
 
 export {
