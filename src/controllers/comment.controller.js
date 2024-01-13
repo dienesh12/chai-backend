@@ -1,4 +1,4 @@
-import mongoose from "mongoose"
+import mongoose, { Schema } from "mongoose"
 import {Comment} from "../models/comment.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -20,9 +20,63 @@ const getVideoComments = asyncHandler(async (req, res) => {
         throw new ApiError(400, `Video with ID: ${videoId} is not present`)
     }
 
-    const comments = await Comment.find().skip((page - 1) * limit).limit(limit)
-                                    .populate("owner", "-password -refreshToken")
-                                    .populate("video")
+    const comments = await Comment.aggregate([
+        {
+            $match: {
+                video: new mongoose.Types.ObjectId(videoId)
+            }
+        }, 
+        { $sort: { "updatedAt": -1 } },
+        { $skip: ((page - 1) * limit) },
+        { $limit: limit },
+        {
+            $project: {
+                _id: 1,
+                content: 1,
+                owner: 1,
+                createdAt: 1,
+                updatedAt: 1
+            }
+        },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'owner',
+                foreignField: '_id',
+                as: 'user',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: 'likes',
+                localField: '_id',
+                foreignField: 'comment',
+                as: 'likes',
+                pipeline: [
+                    {
+                        $project: { likedBy: 1 }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                "totalLikes": { $size: "$likes" }
+            }
+        },
+        {
+            $unset: "likes"
+        }
+    ])
 
     if(!comments) {
         throw new ApiError(500, `Error while fetching all comments of Video with ID: ${videoId}`)
